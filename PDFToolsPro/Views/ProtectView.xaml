@@ -1,0 +1,151 @@
+<UserControl x:Class="PDFToolsPro.Views.ProtectView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PDFToolsPro.Views"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800"
+             AllowDrop="True" Drop="OnFileDrop">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="{Binding Loc.Protect}" FontSize="28" FontWeight="Bold" 
+                       Foreground="{StaticResource TextBrush}" Margin="0,0,0,5"/>
+            <TextBlock Text="{Binding Loc.ProtectDescription}" FontSize="14" 
+                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,25"/>
+
+            <!-- Drop Zone -->
+            <Border Style="{StaticResource DropZone}" Margin="0,0,0,20"
+                    Cursor="Hand"
+                    MouseLeftButtonUp="OnDropZoneClick">
+                <StackPanel HorizontalAlignment="Center">
+                    <materialDesign:PackIcon Kind="Lock" Width="48" Height="48" 
+                                             Foreground="{StaticResource SecondaryBrush}"
+                                             HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Loc.DragFilesHere}" FontSize="16" 
+                               Foreground="{StaticResource TextBrush}" Margin="0,15,0,5"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Loc.Or}" FontSize="13" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"/>
+                    <Button Content="{Binding Loc.SelectFiles}" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding SelectFilesCommand}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- File List -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding Files.Count, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,15">
+                        <TextBlock Text="{Binding Loc.SelectedFiles}" FontWeight="SemiBold" FontSize="14"
+                                   Foreground="{StaticResource TextBrush}"/>
+                        <Button Content="{Binding Loc.Clear}" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ClearFilesCommand}" HorizontalAlignment="Right"
+                                Padding="12,6"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Files}" MaxHeight="120">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource FileListItem}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <materialDesign:PackIcon Kind="FilePdfBox" Width="24" Height="24" 
+                                                                 Foreground="{StaticResource AccentBrush}"
+                                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding FileName}" 
+                                                   VerticalAlignment="Center" Margin="12,0"/>
+                                        <Button Grid.Column="2" Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" Padding="8,4">
+                                            <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Mode Selection -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="{Binding Loc.Protect}" Style="{StaticResource ModernRadioButton}"
+                                 IsChecked="{Binding IsEncryptMode}" Margin="0,0,30,0"/>
+                    <RadioButton Content="{Binding Loc.RemoveProtection}" Style="{StaticResource ModernRadioButton}"
+                                 IsChecked="{Binding IsEncryptMode, Converter={StaticResource InverseBoolConverter}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Password Fields -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="{Binding Loc.Password}" FontWeight="Medium" Margin="0,0,0,8"/>
+                    <PasswordBox x:Name="PasswordBox" Style="{StaticResource ModernPasswordBox}" 
+                                 PasswordChanged="OnPasswordChanged" Margin="0,0,0,15"/>
+
+                    <StackPanel Visibility="{Binding IsEncryptMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="{Binding Loc.ConfirmPassword}" FontWeight="Medium" Margin="0,0,0,8"/>
+                        <PasswordBox x:Name="ConfirmPasswordBox" Style="{StaticResource ModernPasswordBox}"
+                                     PasswordChanged="OnConfirmPasswordChanged"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Protection Options -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding IsEncryptMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Loc.ProtectionOptions}" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{StaticResource TextBrush}" Margin="0,0,0,15"/>
+                    <CheckBox Content="{Binding Loc.RequirePasswordToOpen}" Style="{StaticResource ModernCheckBox}"
+                              IsChecked="{Binding RequirePasswordToOpen}" Margin="0,0,0,10"/>
+                    <CheckBox Content="{Binding Loc.PreventPrinting}" Style="{StaticResource ModernCheckBox}"
+                              IsChecked="{Binding PreventPrinting}" Margin="0,0,0,10"/>
+                    <CheckBox Content="{Binding Loc.PreventCopying}" Style="{StaticResource ModernCheckBox}"
+                              IsChecked="{Binding PreventCopying}" Margin="0,0,0,10"/>
+                    <CheckBox Content="{Binding Loc.PreventEditing}" Style="{StaticResource ModernCheckBox}"
+                              IsChecked="{Binding PreventEditing}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Progress -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="Medium" Margin="0,0,0,10"/>
+                    <ProgressBar Value="{Binding Progress}" Maximum="100" Height="10"
+                                 Style="{StaticResource ModernProgressBar}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Success Message -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20" Background="#E8F5E9"
+                    Visibility="{Binding ShowSuccessMessage, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" FontSize="14"
+                               Foreground="#2E7D32" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Execute Button -->
+            <Grid>
+                <Button Content="{Binding Loc.Execute}" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding ExecuteProtectCommand}" HorizontalAlignment="Center"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                <Button Content="{Binding Loc.Cancel}" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CancelOperationCommand}" HorizontalAlignment="Center"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+

@@ -1,0 +1,147 @@
+﻿<Window x:Class="PDFToolsPro.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PDFToolsPro"
+        xmlns:vm="clr-namespace:PDFToolsPro.ViewModels"
+        xmlns:views="clr-namespace:PDFToolsPro.Views"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="{Binding Loc.AppTitle}" 
+        Height="700" Width="1100"
+        MinHeight="600" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BackgroundBrush}"
+        FlowDirection="{Binding Loc.FlowDirection}"
+        Icon="Resources/Icons/app.ico">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarGradient}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Logo/Header -->
+                <StackPanel Grid.Row="0" Margin="20,30,20,20">
+                    <TextBlock Text="PDF Tools Pro" FontSize="24" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="{Binding Loc.CompressDescription}" FontSize="12" Foreground="#B8C5D6" Margin="0,5,0,0"/>
+                </StackPanel>
+
+                <!-- Navigation -->
+                <StackPanel Grid.Row="1" Margin="0,20,0,0">
+                    <RadioButton Style="{StaticResource NavButton}" 
+                                 IsChecked="{Binding CurrentPage, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Compress}"
+                                 Command="{Binding NavigateCommand}" 
+                                 CommandParameter="{x:Static vm:NavigationPage.Compress}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FolderZip" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Loc.Compress}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}" 
+                                 IsChecked="{Binding CurrentPage, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Merge}"
+                                 Command="{Binding NavigateCommand}" 
+                                 CommandParameter="{x:Static vm:NavigationPage.Merge}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="CallMerge" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Loc.Merge}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}" 
+                                 IsChecked="{Binding CurrentPage, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Split}"
+                                 Command="{Binding NavigateCommand}" 
+                                 CommandParameter="{x:Static vm:NavigationPage.Split}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="CallSplit" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Loc.Split}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}" 
+                                 IsChecked="{Binding CurrentPage, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Watermark}"
+                                 Command="{Binding NavigateCommand}" 
+                                 CommandParameter="{x:Static vm:NavigationPage.Watermark}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Water" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Loc.Watermark}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}" 
+                                 IsChecked="{Binding CurrentPage, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Protect}"
+                                 Command="{Binding NavigateCommand}" 
+                                 CommandParameter="{x:Static vm:NavigationPage.Protect}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Lock" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Loc.Protect}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <Border Height="1" Background="#3E5C7A" Margin="20,20"/>
+
+                    <RadioButton Style="{StaticResource NavButton}" 
+                                 IsChecked="{Binding CurrentPage, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=About}"
+                                 Command="{Binding NavigateCommand}" 
+                                 CommandParameter="{x:Static vm:NavigationPage.About}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Information" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Loc.About}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+
+                <!-- Language Switch -->
+                <Button Grid.Row="2" Margin="20" Command="{Binding SwitchLanguageCommand}"
+                        Style="{StaticResource SecondaryButton}" BorderBrush="White" Foreground="White">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Translate" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Loc.IsArabic, Converter={StaticResource BoolToLanguageConverter}}" 
+                                   Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Border Grid.Column="1" Padding="30">
+            <ContentControl Content="{Binding CurrentViewModel}">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type vm:CompressViewModel}">
+                        <views:CompressView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:MergeViewModel}">
+                        <views:MergeView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:SplitViewModel}">
+                        <views:SplitView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:WatermarkViewModel}">
+                        <views:WatermarkView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:ProtectViewModel}">
+                        <views:ProtectView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:AboutViewModel}">
+                        <views:AboutView/>
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
+        </Border>
+    </Grid>
+</Window>

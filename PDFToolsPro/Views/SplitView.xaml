@@ -1,0 +1,139 @@
+<UserControl x:Class="PDFToolsPro.Views.SplitView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PDFToolsPro.Views"
+             xmlns:vm="clr-namespace:PDFToolsPro.ViewModels"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800"
+             AllowDrop="True" Drop="OnFileDrop">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="{Binding Loc.Split}" FontSize="28" FontWeight="Bold" 
+                       Foreground="{StaticResource TextBrush}" Margin="0,0,0,5"/>
+            <TextBlock Text="{Binding Loc.SplitDescription}" FontSize="14" 
+                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,25"/>
+
+            <!-- Drop Zone -->
+            <Border Style="{StaticResource DropZone}" Margin="0,0,0,20"
+                    Cursor="Hand"
+                    MouseLeftButtonUp="OnDropZoneClick">
+                <StackPanel HorizontalAlignment="Center">
+                    <materialDesign:PackIcon Kind="CallSplit" Width="48" Height="48" 
+                                             Foreground="{StaticResource SecondaryBrush}"
+                                             HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Loc.DragFilesHere}" FontSize="16" 
+                               Foreground="{StaticResource TextBrush}" Margin="0,15,0,5"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Loc.Or}" FontSize="13" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"/>
+                    <Button Content="{Binding Loc.SelectFiles}" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding SelectFilesCommand}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- File Info -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding Files.Count, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <materialDesign:PackIcon Kind="FilePdfBox" Width="32" Height="32" 
+                                             Foreground="{StaticResource AccentBrush}"
+                                             VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Margin="15,0">
+                        <TextBlock Text="{Binding Files[0].FileName, FallbackValue=''}" FontWeight="Medium" FontSize="16"/>
+                        <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}">
+                            <Run Text="{Binding Loc.TotalPages, Mode=OneWay}"/>
+                            <Run Text="{Binding TotalPages, Mode=OneWay}"/>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Column="2" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ClearFilesCommand}" Padding="8,4">
+                        <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Split Mode -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="{Binding Loc.Split}" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{StaticResource TextBrush}" Margin="0,0,0,15"/>
+                    
+                    <!-- Range Mode -->
+                    <RadioButton Style="{StaticResource ModernRadioButton}" Margin="0,0,0,15"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Range}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Loc.PageRange}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,20"
+                                Visibility="{Binding SelectedMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Range}">
+                        <TextBlock Text="{Binding Loc.From}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBox Text="{Binding StartPage}" Style="{StaticResource ModernTextBox}" 
+                                 Width="80" Margin="0,0,20,0"/>
+                        <TextBlock Text="{Binding Loc.To}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBox Text="{Binding EndPage}" Style="{StaticResource ModernTextBox}" Width="80"/>
+                    </StackPanel>
+
+                    <!-- Each Page Mode -->
+                    <RadioButton Content="{Binding Loc.SplitEachPage}" Style="{StaticResource ModernRadioButton}" 
+                                 Margin="0,0,0,15"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=EachPage}"/>
+
+                    <!-- Extract Mode -->
+                    <RadioButton Style="{StaticResource ModernRadioButton}" Margin="0,0,0,15"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Extract}">
+                        <TextBlock Text="{Binding Loc.ExtractPages}"/>
+                    </RadioButton>
+                    <StackPanel Margin="32,0,0,0"
+                                Visibility="{Binding SelectedMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Extract}">
+                        <TextBox Text="{Binding PagesToExtract}" Style="{StaticResource ModernTextBox}" 
+                                 Width="300" HorizontalAlignment="Left"/>
+                        <TextBlock Text="e.g., 1, 3, 5-10" FontSize="12" 
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Progress -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="Medium" Margin="0,0,0,10"/>
+                    <ProgressBar Value="{Binding Progress}" Maximum="100" Height="10"
+                                 Style="{StaticResource ModernProgressBar}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Success Message -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20" Background="#E8F5E9"
+                    Visibility="{Binding ShowSuccessMessage, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" FontSize="14"
+                               Foreground="#2E7D32" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Execute Button -->
+            <Grid>
+                <Button Content="{Binding Loc.Execute}" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding ExecuteSplitCommand}" HorizontalAlignment="Center"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                <Button Content="{Binding Loc.Cancel}" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CancelOperationCommand}" HorizontalAlignment="Center"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+

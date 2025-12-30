@@ -1,0 +1,201 @@
+<UserControl x:Class="PDFToolsPro.Views.WatermarkView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PDFToolsPro.Views"
+             xmlns:models="clr-namespace:PDFToolsPro.Models"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="800"
+             AllowDrop="True" Drop="OnFileDrop">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="{Binding Loc.Watermark}" FontSize="28" FontWeight="Bold" 
+                       Foreground="{StaticResource TextBrush}" Margin="0,0,0,5"/>
+            <TextBlock Text="{Binding Loc.WatermarkDescription}" FontSize="14" 
+                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,25"/>
+
+            <!-- Drop Zone -->
+            <Border Style="{StaticResource DropZone}" Margin="0,0,0,20"
+                    Cursor="Hand"
+                    MouseLeftButtonUp="OnDropZoneClick">
+                <StackPanel HorizontalAlignment="Center">
+                    <materialDesign:PackIcon Kind="Water" Width="48" Height="48" 
+                                             Foreground="{StaticResource SecondaryBrush}"
+                                             HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Loc.DragFilesHere}" FontSize="16" 
+                               Foreground="{StaticResource TextBrush}" Margin="0,15,0,5"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Loc.Or}" FontSize="13" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"/>
+                    <Button Content="{Binding Loc.SelectFiles}" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding SelectFilesCommand}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- File List -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding Files.Count, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,15">
+                        <TextBlock Text="{Binding Loc.SelectedFiles}" FontWeight="SemiBold" FontSize="14"
+                                   Foreground="{StaticResource TextBrush}"/>
+                        <Button Content="{Binding Loc.Clear}" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ClearFilesCommand}" HorizontalAlignment="Right"
+                                Padding="12,6"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Files}" MaxHeight="150">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource FileListItem}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <materialDesign:PackIcon Kind="FilePdfBox" Width="24" Height="24" 
+                                                                 Foreground="{StaticResource AccentBrush}"
+                                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding FileName}" 
+                                                   VerticalAlignment="Center" Margin="12,0"/>
+                                        <Button Grid.Column="2" Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" Padding="8,4">
+                                            <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Watermark Type -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <RadioButton Content="{Binding Loc.UseTextWatermark}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding WatermarkType, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Text}"
+                                     Margin="0,0,30,0"/>
+                        <RadioButton Content="{Binding Loc.UseImageWatermark}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding WatermarkType, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Image}"/>
+                    </StackPanel>
+
+                    <!-- Text Watermark Options -->
+                    <StackPanel Visibility="{Binding WatermarkType, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Text}">
+                        <TextBlock Text="{Binding Loc.WatermarkText}" FontWeight="Medium" Margin="0,0,0,8"/>
+                        <TextBox Text="{Binding WatermarkText, UpdateSourceTrigger=PropertyChanged}" 
+                                 Style="{StaticResource ModernTextBox}" Margin="0,0,0,15"/>
+                        
+                        <TextBlock Text="{Binding Loc.FontSize}" FontWeight="Medium" Margin="0,0,0,8"/>
+                        <Slider Value="{Binding FontSize}" Minimum="12" Maximum="120" 
+                                Style="{StaticResource ModernSlider}" Width="300" HorizontalAlignment="Left"/>
+                        <TextBlock Text="{Binding FontSize}" Margin="0,5,0,0" 
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+
+                    <!-- Image Watermark Options -->
+                    <StackPanel Visibility="{Binding WatermarkType, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Image}">
+                        <TextBlock Text="{Binding Loc.WatermarkImage}" FontWeight="Medium" Margin="0,0,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding ImagePath}" Style="{StaticResource ModernTextBox}" 
+                                     IsReadOnly="True"/>
+                            <Button Grid.Column="1" Content="{Binding Loc.Browse}" 
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding SelectImageCommand}" Margin="10,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Position and Style -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                        <TextBlock Text="{Binding Loc.Opacity}" FontWeight="Medium" Margin="0,0,0,8"/>
+                        <Slider Value="{Binding Opacity}" Minimum="0.1" Maximum="1" 
+                                Style="{StaticResource ModernSlider}"/>
+                        <TextBlock Text="{Binding Opacity, StringFormat=P0}" Margin="0,5,0,0" 
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding Loc.Angle}" FontWeight="Medium" Margin="0,0,0,8"/>
+                        <Slider Value="{Binding Angle}" Minimum="-180" Maximum="180" 
+                                Style="{StaticResource ModernSlider}"/>
+                        <TextBlock Text="{Binding Angle, StringFormat={}{0}°}" Margin="0,5,0,0" 
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Position -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="{Binding Loc.Position}" FontWeight="Medium" Margin="0,0,0,15"/>
+                    <WrapPanel>
+                        <RadioButton Content="{Binding Loc.Center}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding Position, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Center}"
+                                     Margin="0,0,20,10"/>
+                        <RadioButton Content="{Binding Loc.TopLeft}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding Position, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=TopLeft}"
+                                     Margin="0,0,20,10"/>
+                        <RadioButton Content="{Binding Loc.TopRight}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding Position, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=TopRight}"
+                                     Margin="0,0,20,10"/>
+                        <RadioButton Content="{Binding Loc.BottomLeft}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding Position, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=BottomLeft}"
+                                     Margin="0,0,20,10"/>
+                        <RadioButton Content="{Binding Loc.BottomRight}" Style="{StaticResource ModernRadioButton}"
+                                     IsChecked="{Binding Position, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=BottomRight}"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Progress -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="Medium" Margin="0,0,0,10"/>
+                    <ProgressBar Value="{Binding Progress}" Maximum="100" Height="10"
+                                 Style="{StaticResource ModernProgressBar}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Success Message -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20" Background="#E8F5E9"
+                    Visibility="{Binding ShowSuccessMessage, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" FontSize="14"
+                               Foreground="#2E7D32" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Execute Button -->
+            <Grid>
+                <Button Content="{Binding Loc.Execute}" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding ExecuteWatermarkCommand}" HorizontalAlignment="Center"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                <Button Content="{Binding Loc.Cancel}" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CancelOperationCommand}" HorizontalAlignment="Center"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
