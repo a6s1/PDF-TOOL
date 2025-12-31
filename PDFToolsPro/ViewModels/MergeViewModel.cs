@@ -36,12 +36,15 @@ public partial class MergeViewModel : ViewModelBase
     {
         try
         {
+            ShowSuccessMessage = false;
+            
             if (Files.Count < 2) 
             {
                 StatusMessage = Loc.IsArabic ? "يجب اختيار ملفين على الأقل" : "Select at least 2 files";
                 return;
             }
 
+            // Get save location
             var output = GetSaveFilePath("merged.pdf");
                 
             if (string.IsNullOrEmpty(output)) 
@@ -53,15 +56,27 @@ public partial class MergeViewModel : ViewModelBase
             _cts = new CancellationTokenSource();
             IsProcessing = true;
             Progress = 0;
-            ShowSuccessMessage = false;
             
             var fileCount = Files.Count;
-            StatusMessage = $"{Loc.Processing} ({fileCount} {Loc.Files})...";
+            StatusMessage = Loc.IsArabic 
+                ? $"جاري دمج {fileCount} ملفات..." 
+                : $"Merging {fileCount} files...";
 
             var progress = new Progress<int>(p => 
             {
                 Progress = p;
-                StatusMessage = $"{Loc.Merging} ({fileCount} {Loc.Files})... {p}%";
+                if (CompressAfterMerge && p > 50)
+                {
+                    StatusMessage = Loc.IsArabic 
+                        ? $"جاري الضغط... {p}%" 
+                        : $"Compressing... {p}%";
+                }
+                else
+                {
+                    StatusMessage = Loc.IsArabic 
+                        ? $"جاري الدمج... {p}%" 
+                        : $"Merging... {p}%";
+                }
             });
             
             var inputPaths = Files.Select(f => f.FilePath).ToList();
@@ -80,26 +95,37 @@ public partial class MergeViewModel : ViewModelBase
                 {
                     var fileInfo = new System.IO.FileInfo(output);
                     var sizeInMB = fileInfo.Length / (1024.0 * 1024.0);
-                    StatusMessage = $"{Loc.MergeCompleted}\n{Loc.SavedTo} {output}\n({sizeInMB:F2} MB)";
+                    
+                    StatusMessage = Loc.IsArabic 
+                        ? $"✅ تم الدمج بنجاح!\n📁 {System.IO.Path.GetFileName(output)}\n📂 {output}\n📊 الحجم: {sizeInMB:F2} MB"
+                        : $"✅ Merge completed!\n📁 {System.IO.Path.GetFileName(output)}\n📂 {output}\n📊 Size: {sizeInMB:F2} MB";
+                    
                     OutputPath = output;
                     ShowSuccessMessage = true;
+                    Progress = 100;
                     
                     // Open folder with file selected
-                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{output}\"");
+                    try
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{output}\"");
+                    }
+                    catch { }
                 }
                 else
                 {
-                    StatusMessage = Loc.IsArabic ? "خطأ: الملف لم يُنشأ" : "Error: File was not created";
+                    StatusMessage = Loc.IsArabic 
+                        ? "❌ خطأ: الملف لم يُنشأ" 
+                        : "❌ Error: File was not created";
                 }
             }
             else
             {
-                StatusMessage = $"{Loc.Error}: {result.ErrorMessage ?? "خطأ غير معروف"}";
+                StatusMessage = $"❌ {Loc.Error}: {result.ErrorMessage ?? "Unknown error"}";
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"{Loc.Error}: {ex.Message}";
+            StatusMessage = $"❌ {Loc.Error}: {ex.Message}";
         }
         finally
         {
@@ -116,6 +142,3 @@ public partial class MergeViewModel : ViewModelBase
         _cts?.Cancel();
     }
 }
-
-
-

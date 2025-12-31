@@ -1,7 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 using PDFToolsPro.Models;
 using PDFToolsPro.Services;
+using System.IO;
 
 namespace PDFToolsPro.ViewModels;
 
@@ -22,10 +24,31 @@ public partial class CompressViewModel : ViewModelBase
     [ObservableProperty]
     private string _reductionPercentage = "-";
 
+    [ObservableProperty]
+    private string _outputFolder = string.Empty;
+
+    [ObservableProperty]
+    private bool _saveInSameFolder = true;
+
     public CompressViewModel()
     {
         _compressorService = new PdfCompressorService();
         Files.CollectionChanged += (s, e) => ExecuteCompressCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void BrowseOutputFolder()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = Loc.IsArabic ? "اختر مجلد الحفظ" : "Select Output Folder"
+        };
+        
+        if (dialog.ShowDialog() == true)
+        {
+            OutputFolder = dialog.FolderName;
+            SaveInSameFolder = false;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanExecuteCompress))]
@@ -36,31 +59,61 @@ public partial class CompressViewModel : ViewModelBase
         _cts = new CancellationTokenSource();
         IsProcessing = true;
         Progress = 0;
-        StatusMessage = Loc.Processing;
+        ShowSuccessMessage = false;
+        
+        // Reset stats
+        OriginalSize = "-";
+        NewSize = "-";
+        ReductionPercentage = "-";
 
         var settings = new CompressionSettings { Level = SelectedLevel };
-        var progress = new Progress<int>(p => Progress = p);
 
         long totalOriginal = 0;
         long totalNew = 0;
         int processedFiles = 0;
+        int totalFiles = Files.Count;
+        var compressedFilesList = new List<string>();
 
         try
         {
-            foreach (var file in Files.ToList())
+            for (int i = 0; i < Files.Count; i++)
             {
+                var file = Files[i];
+                
                 try
                 {
-                    var outputPath = GetOutputPath(file.FilePath);
-                    if (string.IsNullOrEmpty(outputPath)) continue;
+                    // Calculate output path
+                    string outputPath;
+                    if (SaveInSameFolder || string.IsNullOrEmpty(OutputFolder))
+                    {
+                        // Save in same folder with _compressed suffix
+                        var dir = Path.GetDirectoryName(file.FilePath) ?? "";
+                        var name = Path.GetFileNameWithoutExtension(file.FilePath);
+                        outputPath = Path.Combine(dir, $"{name}_compressed.pdf");
+                    }
+                    else
+                    {
+                        // Save in selected folder
+                        var name = Path.GetFileNameWithoutExtension(file.FilePath);
+                        outputPath = Path.Combine(OutputFolder, $"{name}_compressed.pdf");
+                    }
 
-                    StatusMessage = $"{Loc.Processing}: {file.FileName}";
+                    StatusMessage = Loc.IsArabic 
+                        ? $"جاري ضغط ({i + 1}/{totalFiles}): {file.FileName}" 
+                        : $"Compressing ({i + 1}/{totalFiles}): {file.FileName}";
+
+                    // Progress for this file (scaled to overall progress)
+                    var fileProgress = new Progress<int>(p => 
+                    {
+                        int overallProgress = (int)((i * 100.0 + p) / totalFiles);
+                        Progress = overallProgress;
+                    });
 
                     var result = await _compressorService.CompressAsync(
                         file.FilePath, 
                         outputPath, 
                         settings, 
-                        progress, 
+                        fileProgress, 
                         _cts.Token);
 
                     if (result.Success)
@@ -68,10 +121,11 @@ public partial class CompressViewModel : ViewModelBase
                         totalOriginal += result.OriginalSize;
                         totalNew += result.NewSize;
                         processedFiles++;
+                        compressedFilesList.Add(Path.GetFileName(outputPath));
                     }
                     else
                     {
-                        StatusMessage = $"{Loc.Error}: {result.ErrorMessage}";
+                        StatusMessage = $"❌ {file.FileName}: {result.ErrorMessage}";
                     }
                 }
                 catch (OperationCanceledException)
@@ -81,25 +135,63 @@ public partial class CompressViewModel : ViewModelBase
                 }
                 catch (Exception ex)
                 {
-                    StatusMessage = $"{Loc.Error}: {ex.Message}";
+                    StatusMessage = $"❌ {file.FileName}: {ex.Message}";
                 }
             }
+
+            Progress = 100;
 
             if (processedFiles > 0)
             {
                 OriginalSize = FormatSize(totalOriginal);
                 NewSize = FormatSize(totalNew);
-                var reduction = (1 - (double)totalNew / totalOriginal) * 100;
+                var reduction = totalOriginal > 0 ? (1 - (double)totalNew / totalOriginal) * 100 : 0;
                 ReductionPercentage = $"{reduction:F1}%";
-                var lastFile = Files.LastOrDefault();
-                var outputName = lastFile != null ? GetOutputPath(lastFile.FilePath) : "";
-                StatusMessage = $"{Loc.CompressCompleted}\n{Loc.SavedTo} {System.IO.Path.GetFileName(outputName)}";
+                
+                // Build success message
+                string saveLocation = SaveInSameFolder || string.IsNullOrEmpty(OutputFolder) 
+                    ? (Loc.IsArabic ? "نفس المجلد" : "Same folder") 
+                    : OutputFolder;
+
+                if (processedFiles == 1)
+                {
+                    StatusMessage = Loc.IsArabic 
+                        ? $"✅ تم ضغط الملف بنجاح!\n📁 {compressedFilesList[0]}\n📂 {saveLocation}"
+                        : $"✅ File compressed successfully!\n📁 {compressedFilesList[0]}\n📂 {saveLocation}";
+                }
+                else
+                {
+                    StatusMessage = Loc.IsArabic 
+                        ? $"✅ تم ضغط {processedFiles} ملفات بنجاح!\n📂 {saveLocation}\n📊 توفير: {ReductionPercentage}"
+                        : $"✅ {processedFiles} files compressed successfully!\n📂 {saveLocation}\n📊 Saved: {ReductionPercentage}";
+                }
+                
                 ShowSuccessMessage = true;
+
+                // Open output folder
+                try
+                {
+                    string folderToOpen = SaveInSameFolder || string.IsNullOrEmpty(OutputFolder)
+                        ? Path.GetDirectoryName(Files[0].FilePath) ?? ""
+                        : OutputFolder;
+                    
+                    if (!string.IsNullOrEmpty(folderToOpen))
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", folderToOpen);
+                    }
+                }
+                catch { }
+            }
+            else
+            {
+                StatusMessage = Loc.IsArabic 
+                    ? "❌ لم يتم ضغط أي ملف" 
+                    : "❌ No files were compressed";
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"{Loc.Error}: {ex.Message}";
+            StatusMessage = $"❌ {Loc.Error}: {ex.Message}";
         }
         finally
         {
@@ -114,14 +206,6 @@ public partial class CompressViewModel : ViewModelBase
     private void CancelOperation()
     {
         _cts?.Cancel();
-    }
-
-    private string GetOutputPath(string inputPath)
-    {
-        var dir = System.IO.Path.GetDirectoryName(inputPath);
-        var name = System.IO.Path.GetFileNameWithoutExtension(inputPath);
-        var ext = System.IO.Path.GetExtension(inputPath);
-        return System.IO.Path.Combine(dir ?? "", $"{name}_compressed{ext}");
     }
 
     private string FormatSize(long bytes)
@@ -140,4 +224,3 @@ public partial class CompressViewModel : ViewModelBase
         }
     }
 }
-

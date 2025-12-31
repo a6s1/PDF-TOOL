@@ -11,8 +11,10 @@
              d:DesignHeight="600" d:DesignWidth="800"
              AllowDrop="True" Drop="OnFileDrop">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly">
+        <StackPanel Margin="0,0,0,30">
             <!-- Header -->
             <TextBlock Text="{Binding Loc.Compress}" FontSize="28" FontWeight="Bold" 
                        Foreground="{StaticResource TextBrush}" Margin="0,0,0,5"/>
@@ -43,12 +45,18 @@
                     Visibility="{Binding Files.Count, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel>
                     <Grid Margin="0,0,0,15">
-                        <TextBlock Text="{Binding Loc.SelectedFiles}" FontWeight="SemiBold" FontSize="14"
-                                   Foreground="{StaticResource TextBrush}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Loc.SelectedFiles}" FontWeight="SemiBold" FontSize="14"
+                                       Foreground="{StaticResource TextBrush}"/>
+                            <TextBlock Text=" (" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding Files.Count}" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
+                            <TextBlock Text=")" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
                         <Button Content="{Binding Loc.Clear}" Style="{StaticResource SecondaryButton}"
                                 Command="{Binding ClearFilesCommand}" HorizontalAlignment="Right"
                                 Padding="12,6"/>
                     </Grid>
+                    <!-- File list without nested ScrollViewer - limited to 5 items visible -->
                     <ItemsControl ItemsSource="{Binding Files}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -64,7 +72,7 @@
                                                                  Foreground="{StaticResource AccentBrush}"
                                                                  VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" Margin="12,0">
-                                            <TextBlock Text="{Binding FileName}" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding FileName}" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Text="{Binding FileSizeFormatted}" FontSize="12"
                                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                                         </StackPanel>
@@ -102,13 +110,42 @@
                 </StackPanel>
             </Border>
 
+            <!-- Output Folder Settings -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
+                    Visibility="{Binding Files.Count, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Loc.OutputFolder}" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{StaticResource TextBrush}" Margin="0,0,0,15"/>
+                    
+                    <CheckBox Content="{Binding Loc.SaveInSameFolder}" Style="{StaticResource ModernCheckBox}"
+                              IsChecked="{Binding SaveInSameFolder}" Margin="0,0,0,10"/>
+                    
+                    <Grid Visibility="{Binding SaveInSameFolder, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding OutputFolder}" IsReadOnly="True" 
+                                 Padding="10" Margin="0,0,10,0"
+                                 Style="{StaticResource ModernTextBox}"/>
+                        <Button Grid.Column="1" Content="{Binding Loc.Browse}" 
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseOutputFolderCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- Progress -->
             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
                     Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="{Binding StatusMessage}" FontWeight="Medium" Margin="0,0,0,10"/>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="Medium" Margin="0,0,0,10"
+                               TextWrapping="Wrap"/>
                     <ProgressBar Value="{Binding Progress}" Maximum="100" Height="10"
                                  Style="{StaticResource ModernProgressBar}"/>
+                    <TextBlock Text="{Binding Progress, StringFormat={}{0}%}" 
+                               HorizontalAlignment="Center" Margin="0,5,0,0"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
                 </StackPanel>
             </Border>
 
@@ -123,7 +160,7 @@
 
             <!-- Results -->
             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,20"
-                    Visibility="{Binding NewSize, Converter={StaticResource BoolToVisibilityConverter}}">
+                    Visibility="{Binding ShowSuccessMessage, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -132,27 +169,27 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" HorizontalAlignment="Center">
                         <TextBlock Text="{Binding Loc.OriginalSize}" FontSize="12" 
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding OriginalSize}" FontSize="20" FontWeight="Bold"
-                                   Foreground="{StaticResource TextBrush}"/>
+                                   Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center">
                         <TextBlock Text="{Binding Loc.NewSize}" FontSize="12" 
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding NewSize}" FontSize="20" FontWeight="Bold"
-                                   Foreground="{StaticResource SuccessBrush}"/>
+                                   Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                         <TextBlock Text="{Binding Loc.Reduction}" FontSize="12" 
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding ReductionPercentage}" FontSize="20" FontWeight="Bold"
-                                   Foreground="{StaticResource SecondaryBrush}"/>
+                                   Foreground="{StaticResource SecondaryBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Execute Button -->
-            <Grid>
+            <Grid Margin="0,0,0,20">
                 <Button Content="{Binding Loc.Execute}" Style="{StaticResource PrimaryButton}"
                         Command="{Binding ExecuteCompressCommand}" HorizontalAlignment="Center"
                         Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"/>
@@ -163,4 +200,3 @@
         </StackPanel>
     </ScrollViewer>
 </UserControl>
-

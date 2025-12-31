@@ -118,6 +118,8 @@ public class LocalizationHelper : INotifyPropertyChanged
     public string Files => IsArabic ? "ملف" : "files";
     public string Merging => IsArabic ? "جاري الدمج" : "Merging";
     public string Compressing => IsArabic ? "جاري الضغط" : "Compressing";
+    public string OutputFolder => IsArabic ? "مجلد الحفظ:" : "Output Folder:";
+    public string SaveInSameFolder => IsArabic ? "حفظ في نفس المجلد" : "Save in same folder";
 
     public void SwitchLanguage()
     {
