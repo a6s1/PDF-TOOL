@@ -1,0 +1,76 @@
+name: Build and Sign
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Publish
+        run: |
+          dotnet publish PDFToolsPro/PDFToolsPro.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish
+      
+      - name: Upload artifact for signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDFToolsPro-unsigned
+          path: ./publish/PDFToolsPro.exe
+
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download unsigned artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PDFToolsPro-unsigned
+          path: ./unsigned
+      
+      - name: Sign with SignPath
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORG_ID }}
+          project-slug: 'pdf-tool'
+          signing-policy-slug: 'release-signing'
+          artifact-configuration-slug: 'exe'
+          github-artifact-id: PDFToolsPro-unsigned
+          wait-for-completion: true
+          output-artifact-directory: ./signed
+      
+      - name: Upload signed artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDFToolsPro-signed
+          path: ./signed/PDFToolsPro.exe
+
+  release:
+    needs: sign
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download signed artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PDFToolsPro-signed
+          path: ./signed
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./signed/PDFToolsPro.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
